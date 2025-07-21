@@ -3,48 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile View</title>
+    <title>User Profile Details</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
+        /* Simple spinner for loading state */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100">
 
-<div class="w-full max-w-lg bg-white rounded-xl shadow-lg p-8 md:p-12 text-center">
+<div class="container mx-auto p-4 md:p-8">
+    <div class="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
 
-    <!-- Profile Icon -->
-    <div class="flex justify-center mb-5">
-        <div class="h-20 w-20 bg-indigo-100 rounded-full flex items-center justify-center">
-            <svg class="w-12 h-12 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-            </svg>
+        <!-- Header Section -->
+        <div class="flex flex-col sm:flex-row items-center text-center sm:text-left">
+            <div class="flex-shrink-0 mb-4 sm:mb-0 sm:mr-6">
+                <div class="h-20 w-20 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <svg class="w-12 h-12 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">User Account Details</h1>
+                <p class="text-gray-500 mt-1">
+                    Viewing details for Account RID: <span id="user-rid" class="font-semibold text-indigo-600">{{ account_rid }}</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Data Display Section -->
+        <div id="data-container" class="mt-8 text-left">
+            <!-- Loading State -->
+            <div id="loading-state" class="flex flex-col items-center justify-center p-8">
+                <div class="spinner"></div>
+                <p class="mt-4 text-gray-600">Fetching user data...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="hidden flex-col items-center justify-center p-8 bg-red-50 border border-red-200 rounded-lg">
+                <svg class="w-12 h-12 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                <p id="error-message" class="mt-4 text-red-700 font-semibold">Could not load user data.</p>
+            </div>
+
+            <!-- Success State -->
+            <div id="success-state" class="hidden">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-700">User Account Control Value</h2>
+                    <p class="text-3xl font-mono font-bold text-indigo-600 mt-2" id="uac-sum">
+                        <!-- UAC sum will be inserted here -->
+                    </p>
+                </div>
+
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-700 mb-3">Active UAC Flags</h2>
+                    <div id="flags-list" class="space-y-3">
+                        <!-- Flag details will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 border-t pt-6 text-center">
+            <a href="{{ url_for('dashboard') }}" class="inline-block bg-indigo-600 text-white font-semibold py-2 px-6 rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                Back to Dashboard
+            </a>
         </div>
     </div>
-
-    <!-- Header -->
-    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Profile Page</h1>
-    <p class="text-gray-500 mt-2">This is a placeholder for the selected user's details.</p>
-
-    <!-- Displayed RID -->
-    <div class="mt-6 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-        <p class="text-lg font-mono text-gray-700">
-            Viewing profile for Account RID: <span class="font-bold text-indigo-600">{{ account_rid }}</span>
-        </p>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="mt-8">
-        <!-- This link uses url_for to safely generate the URL back to the dashboard -->
-        <a href="{{ url_for('dashboard') }}" class="inline-block bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">
-            Back to Dashboard
-        </a>
-    </div>
-
 </div>
+
+<script>
+    // This script runs when the DOM is fully loaded.
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- UI Elements ---
+        const loadingState = document.getElementById('loading-state');
+        const errorState = document.getElementById('error-state');
+        const errorMessage = document.getElementById('error-message');
+        const successState = document.getElementById('success-state');
+        const uacSumEl = document.getElementById('uac-sum');
+        const flagsListEl = document.getElementById('flags-list');
+
+        // --- Template Data ---
+        // These values are dynamically inserted by the Flask templating engine.
+        const partitionId = '{{ partition_id }}';
+        const userRid = '{{ account_rid }}';
+
+        // --- API Endpoint ---
+        const apiUrl = `/api/partition/${partitionId}/get_user_f_value_data_with_rid/${userRid}`;
+
+        // --- Fetch and Render Function ---
+        const fetchUserData = async () => {
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status !== 'passed' || !data.f_val) {
+                    throw new Error(data.message || 'API returned a failure status.');
+                }
+
+                renderData(data.f_val);
+
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                renderError(error.message);
+            }
+        };
+
+        // --- Render Functions ---
+        const renderData = (fValueData) => {
+            // Populate UAC sum
+            uacSumEl.textContent = fValueData.uac_flag_sum_decimal;
+
+            // Clear any previous flag entries
+            flagsListEl.innerHTML = '';
+
+            // Check if there are flags to display
+            if (fValueData.uac_flags_list && fValueData.uac_flags_list.length > 0) {
+                // Create and append each flag item
+                fValueData.uac_flags_list.forEach(flag => {
+                    const flagElement = document.createElement('div');
+                    flagElement.className = 'p-4 border border-gray-200 rounded-lg bg-white';
+
+                    flagElement.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <p class="font-bold text-gray-800">${flag['Flag Name']}</p>
+                            <span class="text-sm font-mono bg-gray-200 text-gray-700 px-2 py-1 rounded">${flag['Hex Value']}</span>
+                        </div>
+                        <p class="text-gray-600 mt-1">${flag['Description']}</p>
+                        <p class="text-xs text-gray-400 mt-2">Decimal: ${flag['Decimal Value']}</p>
+                    `;
+                    flagsListEl.appendChild(flagElement);
+                });
+            } else {
+                // Display a message if no flags are active
+                flagsListEl.innerHTML = '<p class="text-gray-500 text-center p-4">No active UAC flags found for this account.</p>';
+            }
+
+            // Show the success content and hide loading/error states
+            loadingState.classList.add('hidden');
+            errorState.classList.add('hidden');
+            successState.classList.remove('hidden');
+        };
+
+        const renderError = (message) => {
+            errorMessage.textContent = `Error: ${message}`;
+            loadingState.classList.add('hidden');
+            successState.classList.add('hidden');
+            errorState.classList.remove('hidden');
+        };
+
+        // --- Initial Call ---
+        // The previous check was flawed because the template engine replaces the placeholder
+        // string on both sides of the comparison, e.g., '1' !== '1', which is always false.
+        // A simple truthy check is sufficient, as un-rendered Jinja variables will result
+        // in empty strings, which are falsy in JavaScript.
+        if (partitionId && userRid) {
+            fetchUserData();
+        } else {
+            console.error("Partition ID or User RID is missing or was not rendered by the template engine.");
+            renderError("Client-side configuration error. Partition ID or RID is missing.");
+        }
+    });
+</script>
 
 </body>
 </html>

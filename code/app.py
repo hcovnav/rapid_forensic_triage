@@ -8,7 +8,7 @@ from clear_folder import clear_folder_contents
 from api_methods.get_volume_information import method_get_volume_information
 from api_methods.check_partitions import method_test_partitions
 from api_methods.file_extraction import method_extract_SAM_registry_file
-from api_methods.get_user_data_with_rid import method_get_user_data_with_rid
+from api_methods.get_user_data_with_rid import method_get_user_f_value_data_with_rid
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -118,10 +118,10 @@ def web_page_view_profiles(partition_id):
     # Pass the partition_id to the template to make it available to the frontend JS
     return render_template('profiles.html', partition_id=partition_id)
 
-@app.route('/web_page_view/profile/<int:account_rid>')
-def profile_page(account_rid):
+@app.route('/web_page_view/partition/<int:partition_id>/profile/<int:account_rid>')
+def profile_page(partition_id, account_rid):
     """Displays a placeholder page for a specific user profile."""
-    return render_template('profile.html', account_rid=account_rid)
+    return render_template('profile.html', account_rid=account_rid, partition_id=partition_id)
 
 # --- API Endpoints ---
 
@@ -155,14 +155,14 @@ def api_get_volume_information():
 
 
 
-@app.route('/api/partition/<int:partition_id>/get_user_data_with_rid/<int:rid>')
-def api_get_user_data_with_rid(partition_id, rid):
+@app.route('/api/partition/<int:partition_id>/get_user_f_value_data_with_rid/<int:rid>')
+def api_get_user_f_value_data_with_rid(partition_id, rid):
     """
     API endpoint to get usernames for a specific partition.
     The partition_id is passed to the underlying method.
     """
     print(f"Fetching usernames for partition: {partition_id}")
-    return jsonify(method_get_user_data_with_rid(cwd=current_dir, partition_id=partition_id, rid=rid))
+    return jsonify(method_get_user_f_value_data_with_rid(cwd=current_dir, partition_id=partition_id, rid=rid))
 
 
 if __name__ == '__main__':

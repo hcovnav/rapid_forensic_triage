@@ -120,7 +120,7 @@
 
                 profiles.forEach(profile => {
                     const profileLink = document.createElement('a');
-                    profileLink.href = `/web_page_view/profile/${profile.account_rid}`;
+                    profileLink.href = `/web_page_view/partition/${partitionId}/profile/${profile.account_rid}`;
                     profileLink.className = 'profile-card block bg-white rounded-xl shadow-md p-6 text-center hover:bg-blue-50';
                     profileLink.setAttribute('aria-label', `View profile for ${profile.account_name}`);
 

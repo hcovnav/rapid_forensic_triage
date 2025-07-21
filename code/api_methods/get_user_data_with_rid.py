@@ -1,7 +1,7 @@
 from . import f_value
 from Registry import Registry
 
-def method_get_user_data_with_rid(cwd, partition_id, rid):
+def method_get_user_f_value_data_with_rid(cwd, partition_id, rid):
     print("rid")
     print(rid)
     try:
