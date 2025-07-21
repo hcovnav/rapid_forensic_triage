@@ -1,0 +1,8 @@
+Data Field,Header Offset,Description
+Username,0x0C,(For reference)
+Full Name,0x18,The full name of the user.
+User Comment,0x24,A comment associated with the user.
+Home Directory Path,0x30,Path to the user's home folder.
+Last Login Timestamp,0x5C,A 64-bit Windows NT time value.
+Password Last Set,0x64,A 64-bit Windows NT time value.
+Account Expiration,0x6C,A 64-bit Windows NT time value.

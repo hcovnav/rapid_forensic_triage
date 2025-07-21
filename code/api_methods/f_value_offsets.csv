@@ -1,0 +1,10 @@
+Field Name,Offset (Hex),Offset (Decimal),Size (Bytes),Data Type
+Revision,0x00,0,2,Integer
+Last Logon Timestamp,0x08,8,8,Windows NT Time
+Password Last Set Timestamp,0x18,24,8,Windows NT Time
+Account Expiration Timestamp,0x20,32,8,Windows NT Time
+Last Incorrect Password Timestamp,0x28,40,8,Windows NT Time
+Relative ID (RID),0x30,48,4,Unsigned Integer
+User Account Control Flags,0x38,56,4,Unsigned Integer (Bitmask)
+Incorrect Password Count,0x40,64,2,Integer
+Login Count,0x42,66,2,Integer

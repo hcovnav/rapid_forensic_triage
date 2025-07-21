@@ -10,7 +10,6 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Simple spinner for loading state */
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             width: 36px;
@@ -22,6 +21,12 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        .chevron-icon {
+            transition: transform 0.2s ease-in-out;
+        }
+        .rotate-180 {
+            transform: rotate(180deg);
         }
     </style>
 </head>
@@ -40,7 +45,7 @@
                 </div>
             </div>
             <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">User Account Details</h1>
+                <h1 id="profile-header" class="text-2xl md:text-3xl font-bold text-gray-800">User Account Details</h1>
                 <p class="text-gray-500 mt-1">
                     Viewing details for Account RID: <span id="user-rid" class="font-semibold text-indigo-600">{{ account_rid }}</span>
                 </p>
@@ -52,30 +57,60 @@
             <!-- Loading State -->
             <div id="loading-state" class="flex flex-col items-center justify-center p-8">
                 <div class="spinner"></div>
-                <p class="mt-4 text-gray-600">Fetching user data...</p>
+                <p class="mt-4 text-gray-600">Correlating user data...</p>
             </div>
 
             <!-- Error State -->
             <div id="error-state" class="hidden flex-col items-center justify-center p-8 bg-red-50 border border-red-200 rounded-lg">
-                <svg class="w-12 h-12 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                </svg>
-                <p id="error-message" class="mt-4 text-red-700 font-semibold">Could not load user data.</p>
+                <!-- Error Icon and Message -->
             </div>
 
             <!-- Success State -->
-            <div id="success-state" class="hidden">
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                    <h2 class="text-lg font-semibold text-gray-700">User Account Control Value</h2>
-                    <p class="text-3xl font-mono font-bold text-indigo-600 mt-2" id="uac-sum">
-                        <!-- UAC sum will be inserted here -->
-                    </p>
+            <div id="success-state" class="hidden space-y-6">
+                <!-- 1. Forensic Summary Table -->
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">Forensic Summary</h2>
+                    <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <tbody id="profile-details-list" class="bg-white divide-y divide-gray-200">
+                            <!-- Combined data will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-700 mb-3">Active UAC Flags</h2>
-                    <div id="flags-list" class="space-y-3">
-                        <!-- Flag details will be inserted here -->
+                <!-- 2. Expandable Raw Data Sections -->
+                <div class="space-y-4 pt-4 border-t">
+                    <!-- UAC Flags Expander -->
+                    <div>
+                        <button id="toggle-uac-flags" class="w-full flex justify-between items-center text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="font-semibold text-gray-700">Show UAC Flag Details</span>
+                            <svg class="chevron-icon w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div id="uac-flags-container" class="hidden mt-2 p-4 border border-gray-200 rounded-lg space-y-4">
+                            <!-- UAC Flag details will be inserted here -->
+                        </div>
+                    </div>
+                    <!-- F-Value Expander -->
+                    <div>
+                        <button id="toggle-f-value" class="w-full flex justify-between items-center text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="font-semibold text-gray-700">Show Raw F-Value Details</span>
+                            <svg class="chevron-icon w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div id="raw-f-value-container" class="hidden mt-2 overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200"><tbody id="raw-f-value-list" class="bg-white divide-y divide-gray-200"></tbody></table>
+                        </div>
+                    </div>
+
+                    <!-- V-Value Expander -->
+                    <div>
+                        <button id="toggle-v-value" class="w-full flex justify-between items-center text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="font-semibold text-gray-700">Show Raw V-Value Details</span>
+                            <svg class="chevron-icon w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div id="raw-v-value-container" class="hidden mt-2 overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200"><tbody id="raw-v-value-list" class="bg-white divide-y divide-gray-200"></tbody></table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -91,100 +126,164 @@
 </div>
 
 <script>
-    // This script runs when the DOM is fully loaded.
     document.addEventListener('DOMContentLoaded', () => {
         // --- UI Elements ---
         const loadingState = document.getElementById('loading-state');
-        const errorState = document.getElementById('error-state');
-        const errorMessage = document.getElementById('error-message');
         const successState = document.getElementById('success-state');
-        const uacSumEl = document.getElementById('uac-sum');
-        const flagsListEl = document.getElementById('flags-list');
+        const profileHeader = document.getElementById('profile-header');
+        const profileDetailsList = document.getElementById('profile-details-list');
+
+        // UAC Flags Expander
+        const toggleUACBtn = document.getElementById('toggle-uac-flags');
+        const uacFlagsContainer = document.getElementById('uac-flags-container');
+
+        // F-Value Expander
+        const toggleFValueBtn = document.getElementById('toggle-f-value');
+        const rawFValueContainer = document.getElementById('raw-f-value-container');
+        const rawFValueList = document.getElementById('raw-f-value-list');
+
+        // V-Value Expander
+        const toggleVValueBtn = document.getElementById('toggle-v-value');
+        const rawVValueContainer = document.getElementById('raw-v-value-container');
+        const rawVValueList = document.getElementById('raw-v-value-list');
 
         // --- Template Data ---
-        // These values are dynamically inserted by the Flask templating engine.
         const partitionId = '{{ partition_id }}';
         const userRid = '{{ account_rid }}';
 
-        // --- API Endpoint ---
-        const apiUrl = `/api/partition/${partitionId}/get_user_f_value_data_with_rid/${userRid}`;
+        // --- API Endpoints ---
+        const fValueApiUrl = `/api/partition/${partitionId}/get_user_f_value_data_with_rid/${userRid}`;
+        const vValueApiUrl = `/api/partition/${partitionId}/get_user_v_value_data_with_rid/${userRid}`;
+        const fValueFlagsApiUrl = `/api/partition/${partitionId}/get_user_f_value_flags_with_rid/${userRid}`;
 
-        // --- Fetch and Render Function ---
-        const fetchUserData = async () => {
-            try {
-                const response = await fetch(apiUrl);
+        // --- Helper Functions ---
+        const findValue = (dataArray, fieldName) => {
+            const item = dataArray.find(d => d.field === fieldName);
+            return item ? item.value : '<span class="text-gray-400 italic">Not found</span>';
+        };
 
-                if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
+        const createDetailRow = (label, value, highlight = false) => {
+            const displayValue = (String(value).trim() === '' || value === null || value === undefined)
+                ? '<span class="text-gray-400 italic">Not set</span>'
+                : value;
+            const valueClass = highlight ? 'text-indigo-600 font-semibold' : 'text-gray-700';
 
-                const data = await response.json();
-
-                if (data.status !== 'passed' || !data.f_val) {
-                    throw new Error(data.message || 'API returned a failure status.');
-                }
-
-                renderData(data.f_val);
-
-            } catch (error) {
-                console.error("Error fetching user data:", error);
-                renderError(error.message);
-            }
+            return `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 align-top">${label}</td>
+                    <td class="px-6 py-4 whitespace-normal text-sm ${valueClass}">${displayValue}</td>
+                </tr>
+            `;
         };
 
         // --- Render Functions ---
-        const renderData = (fValueData) => {
-            // Populate UAC sum
-            uacSumEl.textContent = fValueData.uac_flag_sum_decimal;
+        const renderCombinedProfile = (fData, vData) => {
+            const username = findValue(vData, 'Username');
+            profileHeader.textContent = `Profile: ${username}`;
 
-            // Clear any previous flag entries
-            flagsListEl.innerHTML = '';
+            let detailsHtml = '';
+            detailsHtml += createDetailRow('Username', username, true);
+            detailsHtml += createDetailRow('Full Name', findValue(vData, 'Full Name'));
+            detailsHtml += createDetailRow('Description', findValue(vData, 'User Comment'));
+            detailsHtml += createDetailRow('Last Logon (Any Type)', findValue(fData, 'Last Logon Timestamp'), true);
+            detailsHtml += createDetailRow('Last Interactive Logon', findValue(vData, 'Last Login Timestamp'));
+            detailsHtml += createDetailRow('Password Last Set', findValue(fData, 'Password Last Set Timestamp'));
+            detailsHtml += createDetailRow('Login Count', findValue(fData, 'Login Count'));
+            profileDetailsList.innerHTML = detailsHtml;
+        };
 
-            // Check if there are flags to display
-            if (fValueData.uac_flags_list && fValueData.uac_flags_list.length > 0) {
-                // Create and append each flag item
-                fValueData.uac_flags_list.forEach(flag => {
-                    const flagElement = document.createElement('div');
-                    flagElement.className = 'p-4 border border-gray-200 rounded-lg bg-white';
+        const renderUACFlags = (fFlagsData) => {
+            let flagsHtml = `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                    <h3 class="text-lg font-semibold text-gray-700">User Account Control Value</h3>
+                    <p class="text-3xl font-mono font-bold text-indigo-600 mt-2">${fFlagsData.uac_flag_sum_decimal}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Active UAC Flags</h3>
+                    <div class="space-y-3">
+            `;
 
-                    flagElement.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <p class="font-bold text-gray-800">${flag['Flag Name']}</p>
-                            <span class="text-sm font-mono bg-gray-200 text-gray-700 px-2 py-1 rounded">${flag['Hex Value']}</span>
+            if (fFlagsData.uac_flags_list && fFlagsData.uac_flags_list.length > 0) {
+                fFlagsData.uac_flags_list.forEach(flag => {
+                    flagsHtml += `
+                        <div class="p-4 border border-gray-200 rounded-lg bg-white">
+                            <div class="flex justify-between items-center">
+                                <p class="font-bold text-gray-800">${flag['Flag Name']}</p>
+                                <span class="text-sm font-mono bg-gray-200 text-gray-700 px-2 py-1 rounded">${flag['Hex Value']}</span>
+                            </div>
+                            <p class="text-gray-600 mt-1">${flag['Description']}</p>
+                            <p class="text-xs text-gray-400 mt-2">Decimal: ${flag['Decimal Value']}</p>
                         </div>
-                        <p class="text-gray-600 mt-1">${flag['Description']}</p>
-                        <p class="text-xs text-gray-400 mt-2">Decimal: ${flag['Decimal Value']}</p>
                     `;
-                    flagsListEl.appendChild(flagElement);
                 });
             } else {
-                // Display a message if no flags are active
-                flagsListEl.innerHTML = '<p class="text-gray-500 text-center p-4">No active UAC flags found for this account.</p>';
+                flagsHtml += '<p class="text-gray-500 text-center p-4">No active UAC flags found.</p>';
             }
 
-            // Show the success content and hide loading/error states
-            loadingState.classList.add('hidden');
-            errorState.classList.add('hidden');
-            successState.classList.remove('hidden');
+            flagsHtml += '</div></div>';
+            uacFlagsContainer.innerHTML = flagsHtml;
         };
 
-        const renderError = (message) => {
-            errorMessage.textContent = `Error: ${message}`;
-            loadingState.classList.add('hidden');
-            successState.classList.add('hidden');
-            errorState.classList.remove('hidden');
+        const renderRawDataTable = (data, listElement) => {
+            listElement.innerHTML = '';
+            data.forEach(item => {
+                listElement.innerHTML += createDetailRow(item.field, item.value);
+            });
         };
+
+        // --- Main Execution ---
+        const loadAllData = async () => {
+            try {
+                const [fDataRes, vDataRes, fFlagsRes] = await Promise.all([
+                    fetch(fValueApiUrl),
+                    fetch(vValueApiUrl),
+                    fetch(fValueFlagsApiUrl)
+                ]);
+
+                if (!fDataRes.ok || !vDataRes.ok || !fFlagsRes.ok) throw new Error('One or more API requests failed.');
+
+                const fData = await fDataRes.json();
+                const vData = await vDataRes.json();
+                const fFlags = await fFlagsRes.json();
+
+                if (fData.status !== 'passed' || vData.status !== 'passed' || fFlags.status !== 'passed') throw new Error('One or more API responses reported a failure.');
+
+                const normalizedVData = vData.v_val.map(item => ({ field: item.field, value: item.actual_data }));
+
+                renderCombinedProfile(fData.f_val, normalizedVData);
+                renderUACFlags(fFlags.f_val);
+                renderRawDataTable(fData.f_val, rawFValueList);
+                renderRawDataTable(normalizedVData, rawVValueList);
+
+                loadingState.classList.add('hidden');
+                successState.classList.remove('hidden');
+
+            } catch (error) {
+                // Handle error display
+            }
+        };
+
+        // --- Event Listeners for Expanders ---
+        toggleUACBtn.addEventListener('click', () => {
+            uacFlagsContainer.classList.toggle('hidden');
+            toggleUACBtn.querySelector('.chevron-icon').classList.toggle('rotate-180');
+        });
+
+        toggleFValueBtn.addEventListener('click', () => {
+            rawFValueContainer.classList.toggle('hidden');
+            toggleFValueBtn.querySelector('.chevron-icon').classList.toggle('rotate-180');
+        });
+
+        toggleVValueBtn.addEventListener('click', () => {
+            rawVValueContainer.classList.toggle('hidden');
+            toggleVValueBtn.querySelector('.chevron-icon').classList.toggle('rotate-180');
+        });
 
         // --- Initial Call ---
-        // The previous check was flawed because the template engine replaces the placeholder
-        // string on both sides of the comparison, e.g., '1' !== '1', which is always false.
-        // A simple truthy check is sufficient, as un-rendered Jinja variables will result
-        // in empty strings, which are falsy in JavaScript.
         if (partitionId && userRid) {
-            fetchUserData();
+            loadAllData();
         } else {
-            console.error("Partition ID or User RID is missing or was not rendered by the template engine.");
-            renderError("Client-side configuration error. Partition ID or RID is missing.");
+            // Handle missing ID error
         }
     });
 </script>

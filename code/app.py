@@ -8,7 +8,9 @@ from clear_folder import clear_folder_contents
 from api_methods.get_volume_information import method_get_volume_information
 from api_methods.check_partitions import method_test_partitions
 from api_methods.file_extraction import method_extract_SAM_registry_file
-from api_methods.get_user_data_with_rid import method_get_user_f_value_data_with_rid
+from api_methods.get_user_f_value_flags_with_rid import method_get_user_f_value_flags_with_rid
+from api_methods.get_user_f_value_data_with_rid import method_get_user_f_value_data_with_rid
+from api_methods.get_user_v_value_data_with_rid import method_get_user_v_value_data_with_rid
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -163,6 +165,28 @@ def api_get_user_f_value_data_with_rid(partition_id, rid):
     """
     print(f"Fetching usernames for partition: {partition_id}")
     return jsonify(method_get_user_f_value_data_with_rid(cwd=current_dir, partition_id=partition_id, rid=rid))
+
+
+
+@app.route('/api/partition/<int:partition_id>/get_user_f_value_flags_with_rid/<int:rid>')
+def api_get_user_f_value_flags_with_rid(partition_id, rid):
+    """
+    API endpoint to get usernames for a specific partition.
+    The partition_id is passed to the underlying method.
+    """
+    print(f"Fetching usernames for partition: {partition_id}")
+    return jsonify(method_get_user_f_value_flags_with_rid(cwd=current_dir, partition_id=partition_id, rid=rid))
+
+
+@app.route('/api/partition/<int:partition_id>/get_user_v_value_data_with_rid/<int:rid>')
+def api_get_user_v_value_data_with_rid(partition_id, rid):
+    """
+    API endpoint to get usernames for a specific partition.
+    The partition_id is passed to the underlying method.
+    """
+    print(f"Fetching usernames for partition: {partition_id}")
+    return jsonify(method_get_user_v_value_data_with_rid(cwd=current_dir, partition_id=partition_id, rid=rid))
+
 
 
 if __name__ == '__main__':
