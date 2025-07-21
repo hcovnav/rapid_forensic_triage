@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .partition-card, .info-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .partition-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border-left-color: #3b82f6;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<div class="container mx-auto px-4 py-8 md:py-12">
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="flex justify-center items-center h-64">
+        <div class="spinner"></div>
+        <p class="ml-4 text-lg text-gray-600">Analyzing image...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="hidden text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
+        <strong class="font-bold">Analysis Failed:</strong>
+        <span class="block sm:inline">Could not process the uploaded file.</span>
+    </div>
+
+    <!-- Main Content Area (hidden until data loads) -->
+    <div id="main-content" class="hidden">
+        <!-- Volume Information Display -->
+        <div id="volume-info-container" class="mb-10 p-6 bg-white rounded-xl shadow-md info-card">
+            <h2 class="text-xl font-bold text-gray-800 mb-3">Volume Information</h2>
+            <div id="volume-info-content" class="text-sm text-gray-700 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                <!-- Content will be inserted by JavaScript -->
+            </div>
+        </div>
+
+        <div class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Select a Partition</h1>
+            <p class="text-gray-500 mt-2">Choose a partition to analyze its user profiles.</p>
+        </div>
+
+        <!-- Partitions Grid -->
+        <div id="partitions-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Partition cards will be dynamically inserted here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const mainContent = document.getElementById('main-content');
+        const volumeInfoContent = document.getElementById('volume-info-content');
+        const partitionsGrid = document.getElementById('partitions-grid');
+
+        // --- Step 1: Fetch Volume Information ---
+        fetch('/api/get_volume_information')
+            .then(response => {
+                if (!response.ok) {
+                    // If the response is not OK, read the error message from the JSON body
+                    return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`) });
+                }
+                return response.json();
+            })
+            .then(volumeData => {
+                // --- Display Volume Information ---
+                let contentHTML = '';
+                // Assuming the data is in a 'volume_info' object in your JSON
+                if (volumeData && typeof volumeData === 'object') {
+                    for (const [key, value] of Object.entries(volumeData)) {
+                        // Prettify the key for display
+                        const prettyKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        contentHTML += `<p><strong class="font-medium text-gray-500">${prettyKey}:</strong> ${value}</p>`;
+                    }
+                }
+                volumeInfoContent.innerHTML = contentHTML;
+
+                // --- Step 2: Fetch Partitions (only on success of step 1) ---
+                return fetch('/api/check_partitions');
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`) });
+                }
+                return response.json();
+            })
+            .then(partitionData => {
+                // --- Display Partitions ---
+                loading.classList.add('hidden');
+                mainContent.classList.remove('hidden'); // Show all content now
+
+                if (!partitionData.applicable_partitions || partitionData.applicable_partitions.length === 0) {
+                    partitionsGrid.innerHTML = '<p class="text-center text-gray-500 col-span-full">No applicable partitions were found.</p>';
+                    return;
+                }
+
+                partitionData.applicable_partitions.forEach(partition => {
+                    const cardLink = document.createElement('a');
+                    cardLink.href = `/web_page_view/${partition.partition_id}/profiles`;
+                    cardLink.className = 'partition-card block bg-white rounded-xl shadow-md p-6 text-center hover:bg-green-50';
+
+                    cardLink.innerHTML = `
+                            <div class="flex justify-center mb-4">
+                                <div class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-800">Partition ${partition.partition_id}</h2>
+                            <p class="text-sm text-gray-500 mt-1">Click to view profiles</p>
+                        `;
+                    partitionsGrid.appendChild(cardLink);
+                });
+            })
+            .catch(error => {
+                // --- Handle any error from the entire chain ---
+                console.error('Failed to load dashboard:', error);
+                loading.classList.add('hidden');
+                errorMessage.classList.remove('hidden');
+                // Display the specific error message from the API
+                errorMessage.querySelector('span').textContent = error.message;
+            });
+    });
+</script>
+
+</body>
+</html>

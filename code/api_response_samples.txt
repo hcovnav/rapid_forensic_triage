@@ -1,0 +1,105 @@
+/api/get_volume_information
+
+{
+  "size_MB": 122.5,
+  "size_bytes": 128450048,
+  "status": "passed"
+}
+
+--------------------------------------------------------------
+/api/check_partitions
+
+{
+  "applicable_partitions": [
+    {
+      "files_and_directories": [
+        "$AttrDef",
+        "$BadClus",
+        "$Bitmap",
+        "$Boot",
+        "$Extend",
+        "$LogFile",
+        "$MFT",
+        "$MFTMirr",
+        "$Recycle.Bin",
+        "$Secure",
+        "$UpCase",
+        "$Volume",
+        "Boot",
+        "Documents and Settings",
+        "MSOCache",
+        "Old Stuff",
+        "pagefile.sys",
+        "Program Files",
+        "ProgramData",
+        "System Volume Information",
+        "Users",
+        "Windows",
+        "$OrphanFiles"
+      ],
+      "partition_id": 1
+    }
+  ],
+  "status": "passed"
+}
+
+--------------------------------------------------------------
+/api/partition/1/extract_SAM_registry_file
+{
+  "message": "SAM registry extracted.",
+  "status": "passed"
+}
+--------------------------------------------------------------
+/api/partition/1/get_usernames_and_rids
+[
+  {
+    "account_name": "Administrator",
+    "account_rid": 500
+  },
+  {
+    "account_name": "Dracula",
+    "account_rid": 1002
+  },
+  {
+    "account_name": "Guest",
+    "account_rid": 501
+  },
+  {
+    "account_name": "Laurent",
+    "account_rid": 1003
+  },
+  {
+    "account_name": "Wes Mantooth",
+    "account_rid": 1000
+  }
+]
+
+--------------------------------------------------------------
+/api/partition/1/get_user_data_with_rid/500
+{
+  "f_val": {
+    "rid": 500,
+    "uac_flag_sum_decimal": 529,
+    "uac_flags_list": [
+      {
+        "Decimal Value": "1",
+        "Description": "The logon script will be executed.",
+        "Flag Name": "SCRIPT",
+        "Hex Value": "0x0001"
+      },
+      {
+        "Decimal Value": "16",
+        "Description": "The account is currently locked out.",
+        "Flag Name": "LOCKOUT",
+        "Hex Value": "0x0010"
+      },
+      {
+        "Decimal Value": "512",
+        "Description": "This is a default account type that represents a typical user.",
+        "Flag Name": "NORMAL_ACCOUNT",
+        "Hex Value": "0x0200"
+      }
+    ]
+  },
+  "status": "passed"
+}

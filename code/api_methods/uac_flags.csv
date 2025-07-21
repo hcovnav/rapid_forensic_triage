@@ -1,0 +1,21 @@
+Flag Name,Hex Value,Decimal Value,Description
+SCRIPT,0x0001,1,The logon script will be executed.
+ACCOUNTDISABLE,0x0002,2,The user account is disabled for logon.
+HOMEDIR_REQUIRED,0x0008,8,A home folder is required.
+LOCKOUT,0x0010,16,The account is currently locked out.
+PASSWD_NOTREQD,0x0020,32,No password is required.
+PASSWD_CANT_CHANGE,0x0040,64,The user cannot change the password. This is a permission on the user object.
+ENCRYPTED_TEXT_PWD_ALLOWED,0x0080,128,The user can send an encrypted password.
+TEMP_DUPLICATE_ACCOUNT,0x0100,256,This is an account for a user from another domain.
+NORMAL_ACCOUNT,0x0200,512,This is a default account type that represents a typical user.
+INTERDOMAIN_TRUST_ACCOUNT,0x0800,2048,This is a permission for a trust account for a domain that trusts other domains.
+WORKSTATION_TRUST_ACCOUNT,0x1000,4096,This is a computer account for a computer running Windows NT Workstation or Server.
+SERVER_TRUST_ACCOUNT,0x2000,8192,This is a computer account for a domain controller.
+DONT_EXPIRE_PASSWD,0x10000,65536,The password on this account will never expire.
+MNS_LOGON_ACCOUNT,0x20000,131072,This is a Microsoft Network Services logon account.
+SMARTCARD_REQUIRED,0x40000,262144,The user must log on using a smart card.
+TRUSTED_FOR_DELEGATION,0x80000,524288,The account is trusted for Kerberos delegation.
+NOT_DELEGATED,0x100000,1048576,The security context of the user is not delegated to a service.
+USE_DES_KEY_ONLY,0x200000,2097152,Restrict this principal to using only DES encryption types for keys.
+DONT_REQ_PREAUTH,0x400000,4194304,This account does not require Kerberos preauthentication for logging on.
+PASSWORD_EXPIRED,0x800000,8388608,"The user's password has expired. This is a status flag, not a policy."
