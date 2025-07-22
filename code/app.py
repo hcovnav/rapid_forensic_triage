@@ -7,7 +7,7 @@ from api_methods.get_usernames_and_rids import method_get_usernames_and_rids
 from clear_folder import clear_folder_contents
 from api_methods.get_volume_information import method_get_volume_information
 from api_methods.check_partitions import method_test_partitions
-from api_methods.file_extraction import method_extract_SAM_registry_file
+from api_methods.file_extraction import method_extract_file_from_e01
 from api_methods.get_user_f_value_flags_with_rid import method_get_user_f_value_flags_with_rid
 from api_methods.get_user_f_value_data_with_rid import method_get_user_f_value_data_with_rid
 from api_methods.get_user_v_value_data_with_rid import method_get_user_v_value_data_with_rid
@@ -134,9 +134,14 @@ def api_check_partitions():
 
 @app.route('/api/partition/<int:partition_id>/extract_SAM_registry_file')
 def api_extract_SAM_registry_file(partition_id):
-    ret = status_jsonify(method_extract_SAM_registry_file(current_dir, partition_id))
+    ret = status_jsonify(method_extract_file_from_e01(current_dir, partition_id))
     return ret
 
+
+@app.route('/api/partition/<int:partition_id>/extract_Security_registry_file')
+def api_extract_Security_registry_file(partition_id):
+    ret = status_jsonify(method_extract_file_from_e01(current_dir, partition_id, "/Windows/System32/config/Security"))
+    return ret
 
 @app.route('/api/partition/<int:partition_id>/get_usernames_and_rids')
 def api_get_usernames_and_rids(partition_id):

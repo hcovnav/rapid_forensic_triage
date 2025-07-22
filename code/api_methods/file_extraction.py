@@ -7,7 +7,7 @@ from dfvfs.resolver import resolver
 
 
 
-def get_sam_path_spec(e01_path, partition_id):
+def get_sam_path_spec(e01_path, partition_id, filepath):
     os_path_spec = path_spec_factory.Factory.NewPathSpec(
         definitions.TYPE_INDICATOR_OS, location=e01_path)
 
@@ -21,7 +21,7 @@ def get_sam_path_spec(e01_path, partition_id):
 
     fs_path_spec = path_spec_factory.Factory.NewPathSpec(
         definitions.TYPE_INDICATOR_TSK,
-        location="/Windows/System32/config/SAM",
+        location=filepath,
         parent=partition_path_spec)
 
     return fs_path_spec
@@ -40,7 +40,7 @@ def extract_file_to_local(path_spec, output_path):
     print("[+] Done.")
 
 
-def method_extract_SAM_registry_file(cwd, partition_id):
+def method_extract_file_from_e01(cwd, partition_id, filepath="/Windows/System32/config/SAM"):
 
 
     try:
@@ -53,10 +53,16 @@ def method_extract_SAM_registry_file(cwd, partition_id):
         print(output_dir)
         path = Path(output_dir)
         path.mkdir(parents=True, exist_ok=True)
-        output_path = cwd + "\\uploads\\partitions\\" + partition_id + "\\extracted_SAM"
+        filename = filepath.split("/")[-1]
+        print("filename")
+        print(filename)
+        if filename == "SAM":
+            output_path = cwd + "\\uploads\\partitions\\" + partition_id + "\\extracted_" + filename
+        else:
+            output_path = cwd + "\\uploads\\partitions\\" + partition_id + "\\" + filename
         print("output_path")
         print(output_path)
-        fs_path_spec = get_sam_path_spec(e01_path, partition_id)
+        fs_path_spec = get_sam_path_spec(e01_path, partition_id, filepath)
 
         extract_file_to_local(fs_path_spec, output_path)
     except:

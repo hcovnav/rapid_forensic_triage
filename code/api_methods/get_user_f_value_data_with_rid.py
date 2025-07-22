@@ -1,12 +1,23 @@
+import sys
+
 from . import f_value
+from .load_file_from_e01 import method_load_file_from_e01
 from Registry import Registry
 
 def method_get_user_f_value_data_with_rid(cwd, partition_id, rid):
     print("rid")
     print(rid)
     try:
-        registry_file = cwd + "\\uploads\\partitions\\" + str(partition_id) + "\\extracted_SAM"
-        with open(registry_file, "rb") as f:
+        registry_file_path_in_e01 = "/Windows/System32/config/SAM"
+        try:
+            f = method_load_file_from_e01(cwd=cwd, partition_id=partition_id, filepath=registry_file_path_in_e01)
+        except:
+            return {
+                "status": "failed",
+                "message": "Unable to read file"
+            }
+        else:
+
             registry = Registry.Registry(f)
             run_key = registry.open("SAM\\Domains\\Account\\Users")
             flag = 0
