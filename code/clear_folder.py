@@ -41,5 +41,15 @@ def clear_folder_contents(folder_path):
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
 
+    print(folder_path)
+    print("checking if empty")
+    print(os.listdir(folder_path))
+    try:
+        os.remove(folder_path + "\\upload.E01")
+    except Exception as e:
+        print(f"Failed to delete upload.E01. Reason: {e}")
+
+    print("checking if empty again")
+    print(os.listdir(folder_path))
     print("Folder contents cleared successfully.")
 

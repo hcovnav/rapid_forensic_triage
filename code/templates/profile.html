@@ -28,6 +28,15 @@
         .rotate-180 {
             transform: rotate(180deg);
         }
+        .email-body {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -81,6 +90,52 @@
 
                 <!-- 2. Expandable Raw Data Sections -->
                 <div class="space-y-4 pt-4 border-t">
+                    <!-- Emails Expander -->
+                    <div>
+                        <button id="toggle-emails" class="w-full flex justify-between items-center text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <span class="font-semibold text-gray-700">Emails</span>
+                            <svg class="chevron-icon w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div id="emails-container" class="hidden mt-2 p-4 border border-gray-200 rounded-lg space-y-4">
+                            <!-- AI Summary Section -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">AI Summary</h3>
+                                <div id="ai-summary-container">
+                                    <div id="ai-summary-loading" class="flex items-center p-4 rounded-lg bg-gray-50">
+                                        <div class="spinner h-5 w-5 mr-3"></div>
+                                        <span>Analyzing emails...</span>
+                                    </div>
+                                    <div id="ai-summary-content" class="hidden">
+                                        <!-- Parsed AI summary will be injected here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Emails Table Section -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Email Details</h3>
+                                <div id="emails-table-container" class="overflow-x-auto border border-gray-200 rounded-lg">
+                                    <div id="emails-loading" class="flex items-center justify-center p-6">
+                                        <div class="spinner h-6 w-6 mr-3"></div>
+                                        <span>Loading emails...</span>
+                                    </div>
+                                    <table class="min-w-full divide-y divide-gray-200 hidden">
+                                        <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="emails-list" class="bg-white divide-y divide-gray-200">
+                                        <!-- Email rows will be inserted here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- UAC Flags Expander -->
                     <div>
                         <button id="toggle-uac-flags" class="w-full flex justify-between items-center text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -133,6 +188,16 @@
         const profileHeader = document.getElementById('profile-header');
         const profileDetailsList = document.getElementById('profile-details-list');
 
+        // Emails Expander
+        const toggleEmailsBtn = document.getElementById('toggle-emails');
+        const emailsContainer = document.getElementById('emails-container');
+        const aiSummaryContainer = document.getElementById('ai-summary-container');
+        const aiSummaryLoading = document.getElementById('ai-summary-loading');
+        const aiSummaryContent = document.getElementById('ai-summary-content');
+        const emailsTableContainer = document.getElementById('emails-table-container');
+        const emailsLoading = document.getElementById('emails-loading');
+        const emailsList = document.getElementById('emails-list');
+
         // UAC Flags Expander
         const toggleUACBtn = document.getElementById('toggle-uac-flags');
         const uacFlagsContainer = document.getElementById('uac-flags-container');
@@ -148,13 +213,16 @@
         const rawVValueList = document.getElementById('raw-v-value-list');
 
         // --- Template Data ---
-        const partitionId = '{{ partition_id }}';
-        const userRid = '{{ account_rid }}';
+        const partitionId = '{{ partition_id }}' || '1'; // Fallback for testing
+        const userRid = '{{ account_rid }}' || '1000'; // Fallback for testing
 
         // --- API Endpoints ---
         const fValueApiUrl = `/api/partition/${partitionId}/get_user_f_value_data_with_rid/${userRid}`;
         const vValueApiUrl = `/api/partition/${partitionId}/get_user_v_value_data_with_rid/${userRid}`;
         const fValueFlagsApiUrl = `/api/partition/${partitionId}/get_user_f_value_flags_with_rid/${userRid}`;
+        const emailsApiUrl = `/api/partition/${partitionId}/get_user_emails/${userRid}`;
+        const emailAiAnalysisApiUrl = `http://127.0.0.1:5001/api/partition/${partitionId}/email_ai_analysis/${userRid}`;
+
 
         // --- Helper Functions ---
         const findValue = (dataArray, fieldName) => {
@@ -175,6 +243,8 @@
                 </tr>
             `;
         };
+
+        const delay = ms => new Promise(res => setTimeout(res, ms));
 
         // --- Render Functions ---
         const renderCombinedProfile = (fData, vData) => {
@@ -231,9 +301,113 @@
             });
         };
 
+        const renderAiSummary = (summaryData) => {
+            aiSummaryLoading.classList.add('hidden');
+            aiSummaryContent.classList.remove('hidden');
+
+            if (summaryData.status !== 'passed' || !summaryData.summary) {
+                aiSummaryContent.innerHTML = '<p class="text-red-500 p-4 bg-red-50 rounded-lg">Could not generate AI summary.</p>';
+                return;
+            }
+
+            const summaryText = summaryData.summary;
+            let html = '<div class="space-y-4">';
+
+            // Split the text into sections based on double newlines.
+            const sections = summaryText.split(/\n\s*\n/);
+
+            sections.forEach(sectionText => {
+                const trimmedSection = sectionText.trim();
+                if (!trimmedSection) return;
+
+                // Find the title, e.g., **1. Key Correspondents:**
+                const titleMatch = trimmedSection.match(/^\*\*(.*?):\*\*/);
+                if (!titleMatch) {
+                    // If no title, treat as a simple paragraph in its own box
+                    html += `<div class="p-4 border border-gray-200 rounded-lg bg-white">${trimmedSection.replace(/\n/g, '<br>')}</div>`;
+                    return;
+                }
+
+                const title = titleMatch[1].replace(/^\d+\.\s*/, '');
+                const content = trimmedSection.substring(titleMatch[0].length).trim();
+
+                html += `<div class="p-4 border border-gray-200 rounded-lg bg-white">`;
+                html += `<h4 class="font-semibold text-gray-800 mb-2">${title}</h4>`;
+
+                let contentHtml = '';
+                let inList = false;
+                const lines = content.split('\n').filter(l => l.trim());
+
+                lines.forEach(line => {
+                    const boldedLine = line.trim().replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                    if (boldedLine.startsWith('*')) {
+                        if (!inList) {
+                            contentHtml += '<ul class="list-disc pl-5 space-y-1 text-gray-600">';
+                            inList = true;
+                        }
+                        contentHtml += `<li>${boldedLine.substring(1).trim()}</li>`;
+                    } else {
+                        if (inList) {
+                            contentHtml += '</ul>';
+                            inList = false;
+                        }
+                        contentHtml += `<p class="text-gray-600 mt-2">${boldedLine}</p>`;
+                    }
+                });
+
+                if (inList) {
+                    contentHtml += '</ul>'; // Close any open list at the end
+                }
+
+                html += contentHtml;
+                html += `</div>`; // Close section box
+            });
+
+            html += '</div>'; // Close space-y-4 container
+            aiSummaryContent.innerHTML = html;
+        };
+
+        const renderEmailsTable = (emails) => {
+            emailsLoading.classList.add('hidden');
+            const table = emailsTableContainer.querySelector('table');
+            table.classList.remove('hidden');
+
+            if (!emails || emails.length === 0) {
+                emailsList.innerHTML = `<tr><td colspan="4" class="text-center text-gray-500 py-4">No emails found for this user.</td></tr>`;
+                return;
+            }
+
+            emailsList.innerHTML = ''; // Clear previous entries
+            emails.forEach((email, index) => {
+                const row = document.createElement('tr');
+                row.classList.add('cursor-pointer', 'hover:bg-gray-50');
+                row.dataset.index = index;
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${email.from_addr}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${email.to_addr}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${email.subject}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${email.date}</td>
+                `;
+
+                const detailRow = document.createElement('tr');
+                detailRow.classList.add('hidden');
+                detailRow.innerHTML = `<td colspan="4" class="p-4 bg-gray-50"><pre class="email-body">${email.body}</pre></td>`;
+
+                emailsList.appendChild(row);
+                emailsList.appendChild(detailRow);
+
+                row.addEventListener('click', () => {
+                    detailRow.classList.toggle('hidden');
+                });
+            });
+        };
+
+
         // --- Main Execution ---
         const loadAllData = async () => {
             try {
+                // Fetch primary profile data
                 const [fDataRes, vDataRes, fFlagsRes] = await Promise.all([
                     fetch(fValueApiUrl),
                     fetch(vValueApiUrl),
@@ -259,11 +433,52 @@
                 successState.classList.remove('hidden');
 
             } catch (error) {
-                // Handle error display
+                console.error("Error loading profile data:", error);
+                loadingState.classList.add('hidden');
+                // Handle error display properly
+            }
+        };
+
+        const loadEmailData = async () => {
+            // First, fetch and render the emails list
+            try {
+                const emailsRes = await fetch(emailsApiUrl);
+                const emails = await emailsRes.json();
+                renderEmailsTable(emails);
+            } catch (error) {
+                console.error("Error loading emails list:", error);
+                emailsLoading.classList.add('hidden');
+                emailsTableContainer.querySelector('table').classList.remove('hidden');
+                emailsList.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 py-4">No Emails Found</td></tr>`;
+            }
+
+            // Wait for 10 seconds before fetching the AI summary
+            await delay(10000);
+
+            // Second, fetch and render the AI summary
+            try {
+                const aiSummaryRes = await fetch(emailAiAnalysisApiUrl);
+                const aiSummary = await aiSummaryRes.json();
+                renderAiSummary(aiSummary);
+            } catch (error) {
+                console.error("Error loading AI summary:", error);
+                aiSummaryLoading.classList.add('hidden');
+                aiSummaryContent.innerHTML = '<p class="text-red-500">AI summary not available.</p>';
+                aiSummaryContent.classList.remove('hidden');
             }
         };
 
         // --- Event Listeners for Expanders ---
+        toggleEmailsBtn.addEventListener('click', () => {
+            const isHidden = emailsContainer.classList.toggle('hidden');
+            toggleEmailsBtn.querySelector('.chevron-icon').classList.toggle('rotate-180');
+            // Load email data only when the accordion is first opened
+            if (!isHidden && !emailsContainer.dataset.loaded) {
+                loadEmailData();
+                emailsContainer.dataset.loaded = 'true';
+            }
+        });
+
         toggleUACBtn.addEventListener('click', () => {
             uacFlagsContainer.classList.toggle('hidden');
             toggleUACBtn.querySelector('.chevron-icon').classList.toggle('rotate-180');

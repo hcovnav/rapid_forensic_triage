@@ -1,4 +1,5 @@
 from Registry import Registry
+import os
 
 def method_get_usernames_and_rids(partition_id, cwd):
 
@@ -23,3 +24,14 @@ def method_get_usernames_and_rids(partition_id, cwd):
         print(f"Error: The file '{registry_file}' was not found.")
     except Registry.RegistryParse.ParseException as e:
         print(f"Error parsing the registry file: {e}")
+
+def get_username_from_rid(partition_id, rid, cwd):
+
+    link = method_get_usernames_and_rids(partition_id, cwd)
+    sel = [user for user in link if str(user['account_rid'])==str(rid)]
+    return sel[0]['account_name'] if len(sel)>0 else None
+
+if __name__ == '__main__':
+    cwd = os.path.dirname(os.getcwd())
+    x = get_username_from_rid(partition_id = 1, rid =500, cwd=cwd)
+    print(x)

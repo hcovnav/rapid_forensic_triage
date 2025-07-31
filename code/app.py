@@ -4,6 +4,7 @@ from flask import Flask, request, render_template, jsonify, redirect, url_for
 from werkzeug.utils import secure_filename
 
 from api_methods.get_usernames_and_rids import method_get_usernames_and_rids
+from api_methods.get_usernames_and_rids import get_username_from_rid
 from clear_folder import clear_folder_contents
 from api_methods.get_volume_information import method_get_volume_information
 from api_methods.check_partitions import method_test_partitions
@@ -11,6 +12,8 @@ from api_methods.file_extraction import method_extract_file_from_e01
 from api_methods.get_user_f_value_flags_with_rid import method_get_user_f_value_flags_with_rid
 from api_methods.get_user_f_value_data_with_rid import method_get_user_f_value_data_with_rid
 from api_methods.get_user_v_value_data_with_rid import method_get_user_v_value_data_with_rid
+from api_methods.collect_user_emails import method_get_user_emails
+from api_methods.email_ai_analysis import email_analysis
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -81,6 +84,7 @@ def upload_file():
         try:
             # Clear previous uploads and save the new file
             clear_folder_contents(UPLOAD_FOLDER)
+            #return jsonify({"error": "An unknown error occurred"}), 500
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             print(f"Successfully saved file: {filename}")
@@ -191,6 +195,22 @@ def api_get_user_v_value_data_with_rid(partition_id, rid):
     """
     print(f"Fetching usernames for partition: {partition_id}")
     return jsonify(method_get_user_v_value_data_with_rid(cwd=current_dir, partition_id=partition_id, rid=rid))
+
+
+
+@app.route('/api/partition/<int:partition_id>/get_user_emails/<int:rid>')
+def api_get_user_emails(partition_id, rid):
+    username = get_username_from_rid(partition_id=partition_id, rid=rid, cwd=current_dir)
+    ret = method_get_user_emails(cwd=current_dir, username=username, partition_id=partition_id)
+    #ret = ret[:2]
+    return jsonify(ret)
+
+
+@app.route('/api/partition/<int:partition_id>/email_ai_analysis/<int:rid>')
+def email_ai_analysis(partition_id, rid):
+    username = get_username_from_rid(partition_id=partition_id, rid=rid, cwd=current_dir)
+    ret = email_analysis(cwd=current_dir, username=username, partition_id=partition_id)
+    return jsonify(ret)
 
 
 
