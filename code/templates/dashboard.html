@@ -20,7 +20,7 @@
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            border-left-color: #3b82f6;
+            border-left-color: #3b82f6; /* Blue */
             animation: spin 1s ease infinite;
         }
         @keyframes spin {
@@ -33,13 +33,31 @@
 
 <div class="container mx-auto px-4 py-8 md:py-12">
 
-    <!-- Loading Spinner -->
+    <!-- AI Search Section -->
+    <div id="ai-search-section" class="mb-10 p-6 bg-white rounded-xl shadow-md">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">AI Search</h2>
+        <form id="ai-search-form" class="flex flex-col sm:flex-row gap-3">
+            <input type="text" id="ai-search-input" placeholder="Ask a question about users on a partition, last logon time of a particular user etc." class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                </svg>
+                Search
+            </button>
+        </form>
+        <!-- AI Search Result Display -->
+        <div id="ai-search-result-container" class="mt-4 hidden">
+            <!-- Results, loading spinner, or errors will be injected here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Loading Spinner for initial page load -->
     <div id="loading" class="flex justify-center items-center h-64">
         <div class="spinner"></div>
         <p class="ml-4 text-lg text-gray-600">Analyzing image...</p>
     </div>
 
-    <!-- Error Message -->
+    <!-- Error Message for initial page load -->
     <div id="error-message" class="hidden text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
         <strong class="font-bold">Analysis Failed:</strong>
         <span class="block sm:inline">Could not process the uploaded file.</span>
@@ -69,35 +87,86 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // --- Elements for initial data loading ---
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('error-message');
         const mainContent = document.getElementById('main-content');
         const volumeInfoContent = document.getElementById('volume-info-content');
         const partitionsGrid = document.getElementById('partitions-grid');
 
-        // --- Step 1: Fetch Volume Information ---
+        // --- Elements for AI Search ---
+        const aiSearchForm = document.getElementById('ai-search-form');
+        const aiSearchInput = document.getElementById('ai-search-input');
+        const aiSearchResultContainer = document.getElementById('ai-search-result-container');
+
+        // --- AI Search Logic ---
+        aiSearchForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the form from reloading the page
+            const prompt = aiSearchInput.value.trim();
+            if (!prompt) {
+                // Don't search if the input is empty
+                return;
+            }
+
+            // Show a loading spinner in the result area
+            aiSearchResultContainer.classList.remove('hidden');
+            aiSearchResultContainer.innerHTML = `
+                <div class="flex items-center justify-center p-4 rounded-lg bg-gray-50">
+                    <div class="spinner !w-8 !h-8 !border-left-blue-500"></div>
+                    <p class="ml-3 text-gray-600">Searching...</p>
+                </div>`;
+
+            // Make the GET request to the Flask API
+            fetch(`/api/partition/ai_search?prompt=${encodeURIComponent(prompt)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        // If the server responds with an error status (4xx, 5xx)
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Assuming the API returns a JSON object like: { "result": "..." }
+                    if (data && data.result) {
+                         // Replace newline characters (\n) with HTML break tags (<br>)
+                         const formattedResult = data.result.replace(/\n/g, '<br>');
+                         aiSearchResultContainer.innerHTML = `
+                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-gray-800">${formattedResult}</p>
+                            </div>`;
+                    } else {
+                         // Handle cases where the response is successful but has no result
+                         throw new Error('No result found in response');
+                    }
+                })
+                .catch(error => {
+                    // Handle network errors or errors thrown from the .then() blocks
+                    console.error('AI Search Error:', error);
+                    aiSearchResultContainer.innerHTML = `
+                        <div class="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                            <p>Could not fetch results. Please try again.</p>
+                        </div>`;
+                });
+        });
+
+
+        // --- Original Logic for Fetching Volume and Partition Info ---
         fetch('/api/get_volume_information')
             .then(response => {
                 if (!response.ok) {
-                    // If the response is not OK, read the error message from the JSON body
                     return response.json().then(err => { throw new Error(err.error || `HTTP error! status: ${response.status}`) });
                 }
                 return response.json();
             })
             .then(volumeData => {
-                // --- Display Volume Information ---
                 let contentHTML = '';
-                // Assuming the data is in a 'volume_info' object in your JSON
                 if (volumeData && typeof volumeData === 'object') {
                     for (const [key, value] of Object.entries(volumeData)) {
-                        // Prettify the key for display
                         const prettyKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         contentHTML += `<p><strong class="font-medium text-gray-500">${prettyKey}:</strong> ${value}</p>`;
                     }
                 }
                 volumeInfoContent.innerHTML = contentHTML;
-
-                // --- Step 2: Fetch Partitions (only on success of step 1) ---
                 return fetch('/api/check_partitions');
             })
             .then(response => {
@@ -107,9 +176,8 @@
                 return response.json();
             })
             .then(partitionData => {
-                // --- Display Partitions ---
                 loading.classList.add('hidden');
-                mainContent.classList.remove('hidden'); // Show all content now
+                mainContent.classList.remove('hidden');
 
                 if (!partitionData.applicable_partitions || partitionData.applicable_partitions.length === 0) {
                     partitionsGrid.innerHTML = '<p class="text-center text-gray-500 col-span-full">No applicable partitions were found.</p>';
@@ -120,27 +188,24 @@
                     const cardLink = document.createElement('a');
                     cardLink.href = `/web_page_view/${partition.partition_id}/profiles`;
                     cardLink.className = 'partition-card block bg-white rounded-xl shadow-md p-6 text-center hover:bg-green-50';
-
                     cardLink.innerHTML = `
-                            <div class="flex justify-center mb-4">
-                                <div class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
-                                    </svg>
-                                </div>
+                        <div class="flex justify-center mb-4">
+                            <div class="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg class="w-10 h-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5m-16.5 4.5h16.5" />
+                                </svg>
                             </div>
-                            <h2 class="text-xl font-semibold text-gray-800">Partition ${partition.partition_id}</h2>
-                            <p class="text-sm text-gray-500 mt-1">Click to view profiles</p>
-                        `;
+                        </div>
+                        <h2 class="text-xl font-semibold text-gray-800">Partition ${partition.partition_id}</h2>
+                        <p class="text-sm text-gray-500 mt-1">Click to view profiles</p>
+                    `;
                     partitionsGrid.appendChild(cardLink);
                 });
             })
             .catch(error => {
-                // --- Handle any error from the entire chain ---
                 console.error('Failed to load dashboard:', error);
                 loading.classList.add('hidden');
                 errorMessage.classList.remove('hidden');
-                // Display the specific error message from the API
                 errorMessage.querySelector('span').textContent = error.message;
             });
     });

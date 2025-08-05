@@ -1,6 +1,7 @@
 import os
 import json
 from email import message_from_bytes
+import traceback
 from pathlib import Path
 
 from dfvfs.lib import definitions
@@ -40,6 +41,7 @@ def read_file_contents(file_path_spec):
     This function must return bytes for the email parser to work correctly.
     """
     try:
+        # Using capitalized Resolver as confirmed by user testing.
         file_object = resolver.Resolver.OpenFileObject(file_path_spec)
         return file_object.read()
     except Exception as e:
@@ -64,19 +66,36 @@ def get_full_path_from_path_spec(path_spec):
 eml_files = []
 def get_eml_files_in_directory(path_spec):
     """Recursively finds all .eml files in a directory and its subdirectories."""
+    # Using capitalized Resolver as confirmed by user testing.
     file_system = resolver.Resolver.OpenFileSystem(path_spec)
     directory = file_system.GetFileEntryByPathSpec(path_spec)
-    for entry in directory.sub_file_entries:
-        path = get_full_path_from_path_spec(entry.path_spec)
-        if entry.IsDirectory():
-            get_eml_files_in_directory(entry.path_spec)
-        else:
-            if entry.name.endswith(".eml"):
-                eml_files.append(path)
+    if directory:
+        if hasattr(directory, "sub_file_entries"):
+            for entry in directory.sub_file_entries:
+                path = get_full_path_from_path_spec(entry.path_spec)
+                if entry.IsDirectory():
+                    get_eml_files_in_directory(entry.path_spec)
+                else:
+                    if entry.name.endswith(".eml"):
+                        eml_files.append(path)
 
 
-def method_get_user_email_paths(cwd = "", username="", partition_id=""):
-    """Collects all .eml file paths for a given user."""
+def method_get_user_email_paths(cwd="", username="", partition_id=""):
+    """Scans a user's profile to find the paths of all .eml email files.
+
+    This function targets the common location for Windows Mail artifacts within
+    a user's profile inside an E01 image. It performs a recursive search
+    to compile a comprehensive list of all .eml file paths.
+
+    Args:
+        cwd (str): The current working directory of the main application.
+        username (str): The username of the target user profile.
+        partition_id (int or str): The identifier of the partition to search.
+
+    Returns:
+        list: A list of strings, where each string is the full path to a
+              discovered .eml file within the evidence image.
+    """
     global eml_files
     eml_files = []  # Reset the global list for each call
     directory_to_list = f"/Users/{username}/AppData/Local/Microsoft/Windows Mail/Local Folders"
@@ -120,45 +139,51 @@ def parse_eml_file(email_data):
 
         return {"date":date, "subject":subject, "body":body, "from_addr":from_addr, "to_addr":to_addr}
     except Exception as e:
+        traceback.print_exc()
         print(f"[-] Error parsing email: {e}")
         return None
 
 
-def method_get_user_emails(cwd = "", username="", partition_id=""):
-    """
-    Retrieves and parses all emails for a user, returning a list of JSON objects.
+def method_get_user_emails(cwd="", username="", partition_id=""):
+    """Retrieves and parses all emails for a user, returning structured data.
+
+    This function orchestrates the email collection process. It first calls
+    method_get_user_email_paths() to discover all email file locations, then
+    iterates through each path, reads the raw file content from the E01 image,
+    and parses it into a structured dictionary.
+
+    Args:
+        cwd (str): The current working directory of the main application.
+        username (str): The username of the target user profile.
+        partition_id (int or str): The identifier of the partition to search.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary represents a
+              parsed email and includes its metadata, body, and source path.
     """
     paths = method_get_user_email_paths(cwd, username, partition_id)
     e01_file_path = str(Path(cwd) / "uploads" / "upload.E01")
     parsed_emails = []
 
     for path in paths:
-        # First, create the path specification for the individual email file.
         spec = get_path_spec(e01_file_path, partition_id, path)
-
-        # Second, read the raw byte content of that file.
         email_content = read_file_contents(spec)
 
-        # Third, pass the byte content to the parser.
         if email_content:
             parsed_email = parse_eml_file(email_content)
             if parsed_email:
-                # Add the file path to the JSON object for reference
                 parsed_email['source_path'] = path
                 parsed_emails.append(parsed_email)
 
     return parsed_emails
 
 
-#if __name__ == "__main__":
-#    current_dir = "C:\\non_os\\project\\7030\\py\\finalized_v2\\web_app"
-#    partition_id = 1
-#    username = "Wes Mantooth"
-#
-#    email_json_list = method_get_user_emails(cwd=current_dir, username=username, partition_id=partition_id)
-#
-#    #print(f"\n--- Parsed {len(email_json_list)} emails ---")
-#    if email_json_list:
-#        # Print the first email as an example
-#        print(json.dumps(email_json_list, indent=2))
-#        pass
+if __name__ == "__main__":
+    cwd = "C:\\non_os\\project\\7030\\py\\finalized_v2\\web_app"
+    partition_id = 1
+    username = "Wes Mantooth"
+
+    email_json_list = method_get_user_emails(cwd, username, partition_id)
+    print(f"\n--- Parsed {len(email_json_list)} emails ---")
+    if email_json_list:
+        print(json.dumps(email_json_list[0], indent=2))

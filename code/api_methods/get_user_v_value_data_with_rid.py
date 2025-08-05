@@ -2,6 +2,26 @@ from . import v_value
 from Registry import Registry
 
 def method_get_user_v_value_data_with_rid(cwd, partition_id, rid):
+    """Extracts and parses the V value data for a specific user from the SAM hive.
+
+    This function orchestrates the process of reading the SAM hive from the
+    extracted partition files, locating the specific user account key by its
+    Relative ID (RID), and then passing the raw binary V value data to a
+    specialized parser (v_value.py). The user/rid key is located within "SAM/Domains/Account/Users"
+
+    Args:
+        cwd (str): The current working directory of the main application.
+        partition_id (int or str): The identifier of the partition containing
+            the SAM hive.
+        rid (int or str): The Relative ID of the target user whose V value
+            is to be parsed.
+
+    Returns:
+        dict: A dictionary containing the status of the operation. On success,
+              the status is "passed" and it includes the parsed V value data
+              under the 'v_val' key. On failure, it returns a dictionary
+              with a "failed" status and an error message.
+    """
     print("rid")
     print(rid)
     try:
@@ -15,17 +35,11 @@ def method_get_user_v_value_data_with_rid(cwd, partition_id, rid):
                 if flag == 1:
                     break
                 if value.name() != "Names":
-                    print("------------------------------")
-                    print("value.name()")
-                    print(value.name())
                     if int(value.name(), 16) == int(rid):
-                        print("+++++++++++++++")
                         print(f"Key Name: {value.name()}")
-                        print("---------------")
                         for unit_type_1 in value.values():
                             if unit_type_1.name() == "V":
                                 print(f"Value Name: {unit_type_1.name()}")
-                                print(f"Value Type: {unit_type_1.value_type_str()}")
                                 v_val = v_value.method_get_v_value_data(cwd, unit_type_1.raw_data())
                                 print(v_val)
                                 flag = 1
@@ -34,13 +48,10 @@ def method_get_user_v_value_data_with_rid(cwd, partition_id, rid):
                 "status": "passed"
             }
 
-
-
-
-
-
-
     except FileNotFoundError:
-        print(f"Error: The file was not found.")
+        print(f"Error: The file '{registry_file}' was not found.")
+        return {"status": "failed", "message": "SAM file not found."}
     except Registry.RegistryParse.ParseException as e:
         print(f"Error parsing the registry file: {e}")
+        return {"status": "failed", "message": f"Registry Parse Error: {e}"}
+

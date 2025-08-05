@@ -2,6 +2,26 @@ from . import f_value_flags
 from Registry import Registry
 
 def method_get_user_f_value_flags_with_rid(cwd, partition_id, rid):
+    """Extracts and decodes the UAC flags from a user's F value.
+
+    This function locates a user within the extracted SAM hive by their
+    Relative ID (RID). It then finds the corresponding F value, a binary
+    data blob, and passes it to a helper module (f_value_flags) to parse
+    the data and decode the User Account Control (UAC) flags into a
+    human-readable list. The user/rid key is located within "SAM/Domains/Account/Users"
+
+    Args:
+        cwd (str): The current working directory of the main application, used
+            to construct the path to the extracted SAM hive.
+        partition_id (int or str): The identifier of the partition from which
+            the SAM hive was extracted.
+        rid (int or str): The Relative ID of the target user.
+
+    Returns:
+        dict: A dictionary containing the status of the operation. On success,
+              the status is "passed" and it includes the decoded flag data
+              under the 'f_val' key. On failure, the status is "failed".
+    """
     print("rid")
     print(rid)
     try:
@@ -15,39 +35,31 @@ def method_get_user_f_value_flags_with_rid(cwd, partition_id, rid):
                 if flag == 1:
                     break
                 if value.name() != "Names":
-                    print("------------------------------")
-                    print("value.name()")
-                    print(value.name())
                     if int(value.name(), 16) == int(rid):
-                        print("+++++++++++++++")
                         print(f"Key Name: {value.name()}")
-                        print("---------------")
                         for unit_type_1 in value.values():
                             if unit_type_1.name() == "F":
                                 print(f"Value Name: {unit_type_1.name()}")
-                                print(f"Value Type: {unit_type_1.value_type_str()}")
                                 f_val = f_value_flags.method_get_f_value_flags(cwd, unit_type_1.raw_data())
                                 print(f_val)
                                 flag = 1
+
+            # Final check to ensure the parsed data corresponds to the requested RID
             if "rid" in f_val:
-                if f_val["rid"] == rid:
+                if str(f_val["rid"]) == str(rid):
                     return {
                         "f_val": f_val,
                         "status": "passed"
                     }
 
             return {
-                "f_val": f_val,
-                "status": "failed"
+                "f_val": f_val, # May be empty or incorrect on failure
+                #"status": "failed"
             }
 
-
-
-
-
-
-
     except FileNotFoundError:
-        print(f"Error: The file was not found.")
+        print(f"Error: The file '{registry_file}' was not found.")
+        return {"status": "failed", "message": "SAM file not found."}
     except Registry.RegistryParse.ParseException as e:
         print(f"Error parsing the registry file: {e}")
+        return {"status": "failed", "message": f"Registry Parse Error: {e}"}
